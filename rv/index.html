@@ -49,7 +49,8 @@
   .pad { position:relative; }
   .padlab { font-size:14px; color:var(--ink); font-weight:600; margin-bottom:4px; }
   .pad canvas { display:block; width:100%; height:130px; border:2px dashed #8aa6c1; border-radius:8px; background:#fbfdff; touch-action:none; }
-  .redo { position:absolute; right:6px; bottom:6px; font-size:13px; padding:5px 10px; background:#fff; color:var(--accent); border:1px solid var(--accent); }
+  .padtime { font-size:11.5px; color:#2e6b2e; min-height:1.2em; margin-top:3px; }
+  .redo { position:absolute; right:6px; top:28px; font-size:13px; padding:5px 10px; background:#fff; color:var(--accent); border:1px solid var(--accent); }
   .sig .lines { display:grid; grid-template-columns:1fr 1fr; gap:22px 28px; margin-top:14px; }
   .sig .lines div { border-top:1px solid #555; padding-top:3px; text-align:center; font-size:11px; }
   .actions { position:fixed; left:0; right:0; bottom:0; background:rgba(255,255,255,.96); border-top:1px solid var(--line); padding:10px 14px calc(10px + env(safe-area-inset-bottom)); display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
@@ -110,9 +111,9 @@
 <div class="grid c2e" style="border-top:0"><label>On (date)<input name="dated_on" type="date"></label><label>Witness name(s) (optional)<input name="witness_names"></label></div>
 <div class="sig">I certify that all information shown above is true to the best of my knowledge.
   <div class="pads">
-    <div class="pad"><div class="padlab">Buyer signs here with finger</div><canvas data-sig="buyer"></canvas><button type="button" class="redo" data-for="buyer">Redo</button></div>
-    <div class="pad"><div class="padlab">Seller signs here with finger</div><canvas data-sig="seller"></canvas><button type="button" class="redo" data-for="seller">Redo</button></div>
-    <div class="pad"><div class="padlab">Witness signs here (if there is one)</div><canvas data-sig="witness"></canvas><button type="button" class="redo" data-for="witness">Redo</button></div>
+    <div class="pad"><div class="padlab">Buyer signs here with finger</div><canvas data-sig="buyer"></canvas><button type="button" class="redo" data-for="buyer">Redo</button><div class="padtime" id="t_buyer"></div></div>
+    <div class="pad"><div class="padlab">Seller signs here with finger</div><canvas data-sig="seller"></canvas><button type="button" class="redo" data-for="seller">Redo</button><div class="padtime" id="t_seller"></div></div>
+    <div class="pad"><div class="padlab">Witness signs here (if there is one)</div><canvas data-sig="witness"></canvas><button type="button" class="redo" data-for="witness">Redo</button><div class="padtime" id="t_witness"></div></div>
   </div>
 </div>
 
@@ -210,7 +211,9 @@ updateWords();
 const SIGS = {};
 const SIGKEY = 'rv_bos_sigs_v2';
 let storedSigs = {}; try{ storedSigs = JSON.parse(localStorage.getItem(SIGKEY)||'{}')||{}; }catch(e){}
-function persistSigs(){ try{ const o={}; for(const k in SIGS){ if(SIGS[k].hasInk) o[k]=SIGS[k].canvas.toDataURL('image/png'); } localStorage.setItem(SIGKEY, JSON.stringify(o)); }catch(e){} }
+function fmtStamp(d){ return d.toLocaleString('en-CA',{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'}); }
+function showTime(k){ const st=SIGS[k], el=document.getElementById('t_'+k); if(el) el.textContent = st.hasInk && st.time ? 'Signed '+fmtStamp(new Date(st.time)) : ''; }
+function persistSigs(){ try{ const o={}; for(const k in SIGS){ if(SIGS[k].hasInk) o[k]={img:SIGS[k].canvas.toDataURL('image/png'), time:SIGS[k].time||null}; } localStorage.setItem(SIGKEY, JSON.stringify(o)); }catch(e){} }
 document.querySelectorAll('canvas[data-sig]').forEach(cv=>{
   const key = cv.dataset.sig; const st = { canvas:cv, hasInk:false };
   SIGS[key]=st;
@@ -221,16 +224,16 @@ document.querySelectorAll('canvas[data-sig]').forEach(cv=>{
     ctx.setTransform(dpr,0,0,dpr,0,0); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineWidth=2.6; ctx.strokeStyle='#0b1f4d';
     if(keep){ const im=new Image(); im.onload=()=>{ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.drawImage(im,0,0,cv.width,cv.height); ctx.restore(); }; im.src=keep; } }
   size();
-  if(storedSigs[key]){ const im=new Image(); im.onload=()=>{ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.drawImage(im,0,0,cv.width,cv.height); ctx.restore(); st.hasInk=true; }; im.src=storedSigs[key]; }
+  if(storedSigs[key]){ const im=new Image(); im.onload=()=>{ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.drawImage(im,0,0,cv.width,cv.height); ctx.restore(); st.hasInk=true; st.time=(typeof storedSigs[key]==='object'?storedSigs[key].time:null); showTime(key); }; im.src=(typeof storedSigs[key]==='string'?storedSigs[key]:storedSigs[key].img); }
   let drawing=false, last=null;
   const pos=e=>{ const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; };
   cv.addEventListener('pointerdown', e=>{ e.preventDefault(); drawing=true; last=pos(e); try{cv.setPointerCapture(e.pointerId);}catch(_){} ctx.beginPath(); ctx.arc(last[0],last[1],1.2,0,Math.PI*2); ctx.fillStyle='#0b1f4d'; ctx.fill(); st.hasInk=true; });
   cv.addEventListener('pointermove', e=>{ if(!drawing) return; e.preventDefault(); const p=pos(e); ctx.beginPath(); ctx.moveTo(last[0],last[1]); ctx.lineTo(p[0],p[1]); ctx.stroke(); last=p; });
-  const end=()=>{ if(drawing){ drawing=false; persistSigs(); } };
+  const end=()=>{ if(drawing){ drawing=false; st.time=new Date().toISOString(); showTime(key); persistSigs(); } };
   cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end); cv.addEventListener('pointerleave', end);
   window.addEventListener('resize', ()=>{ clearTimeout(st.t); st.t=setTimeout(size,150); });
 });
-document.querySelectorAll('.redo').forEach(b=>b.addEventListener('click',()=>{ const st=SIGS[b.dataset.for]; const c=st.canvas; c.getContext('2d').save(); c.getContext('2d').setTransform(1,0,0,1,0,0); c.getContext('2d').clearRect(0,0,c.width,c.height); c.getContext('2d').restore(); st.hasInk=false; persistSigs(); }));
+document.querySelectorAll('.redo').forEach(b=>b.addEventListener('click',()=>{ const st=SIGS[b.dataset.for]; const c=st.canvas; c.getContext('2d').save(); c.getContext('2d').setTransform(1,0,0,1,0,0); c.getContext('2d').clearRect(0,0,c.width,c.height); c.getContext('2d').restore(); st.hasInk=false; st.time=null; showTime(b.dataset.for); persistSigs(); }));
 function sigImage(key){ const st=SIGS[key]; if(!st||!st.hasInk) return null;
   const c=st.canvas, ctx=c.getContext('2d'); const d=ctx.getImageData(0,0,c.width,c.height).data;
   let x0=c.width,y0=c.height,x1=-1,y1=-1;
@@ -242,7 +245,7 @@ function sigImage(key){ const st=SIGS[key]; if(!st||!st.hasInk) return null;
 
 function fmtDate(s){ if(!s) return ''; const [y,m,d]=s.split('-').map(Number); const mn=['January','February','March','April','May','June','July','August','September','October','November','December']; return `${d} ${mn[m-1]} ${y}`; }
 
-function buildPDF(){
+function buildPDF(meta){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({unit:'pt', format:'letter'});
   const W=612, H=792, M=36, CW=W-2*M;
@@ -255,7 +258,7 @@ function buildPDF(){
   const opt = (x,yy,label,checked)=>{ box(x,yy-7,checked); T(label,x+11,yy,8.5); doc.setFont('helvetica','normal'); doc.setFontSize(8.5); return x+11+doc.getTextWidth(label)+10; };
   const fillLine = (x1,x2,yy,v,size=10)=>{ doc.setLineWidth(0.6); doc.line(x1,yy+2,x2,yy+2); if(v){ doc.setFont('helvetica','normal'); let fs=size; doc.setFontSize(fs); while(doc.getTextWidth(v)>x2-x1-4 && fs>6){fs-=0.5; doc.setFontSize(fs);} doc.text(v,x1+3,yy); } };
   const para = (txt,x,yy,w,size=7.8,boldHead)=>{ doc.setFontSize(size); const lh=size*1.25; if(boldHead){ doc.setFont('helvetica','bold'); const hw=doc.getTextWidth(boldHead+':')+3; doc.text(boldHead+':',x,yy); doc.setFont('helvetica','normal'); const first = doc.splitTextToSize(txt, w-hw); const firstLine = first[0]; doc.text(firstLine,x+hw,yy); const rest = txt.slice(firstLine.length).trim(); if(rest){ const lines=doc.splitTextToSize(rest,w); doc.text(lines,x,yy+lh); return yy+lh*(lines.length+1);} return yy+lh; } doc.setFont('helvetica','normal'); const lines=doc.splitTextToSize(txt,w); doc.text(lines,x,yy); return yy+lh*lines.length; };
-  const footer = (n)=>{ T('RV Trailer Bill of Sale - Province of Alberta',M,H-22,7); T('Confidential (when completed)',W/2,H-22,7,'normal',{align:'center'}); T(`Page ${n} of 2`,W-M,H-22,7,'normal',{align:'right'}); };
+  const footer = (n)=>{ T('RV Trailer Bill of Sale - Province of Alberta',M,H-22,7); T('Document ID: '+meta.docId,W/2,H-22,7,'normal',{align:'center'}); T(`Page ${n} of 2`,W-M,H-22,7,'normal',{align:'right'}); };
   const sig = (x,yy,w,label)=>{ doc.setLineWidth(0.6); doc.line(x,yy,x+w,yy); T(label,x+w/2,yy+8.5,7,'normal',{align:'center'}); };
 
   // PAGE 1
@@ -358,6 +361,18 @@ function buildPDF(){
   for(const g of GEN){ doc.circle(M+7,y-2.5,1.5,'F'); y = para(g,M+14,y,CW-16,7.3)+2; }
   y += 4;
   T('Any dispute arising from this sale is a civil matter between the parties named in this document.',M+4,y,7);
+  y += 14; y = bar(y,'ELECTRONIC SIGNATURE RECORD');
+  doc.setLineWidth(0.6); const top=y; y += 12;
+  const nm={buyer:val('buyer_name'),seller:val('seller_name'),witness:val('witness_names')};
+  const lb={buyer:'Buyer',seller:'Seller',witness:'Witness'};
+  for(const k of ['buyer','seller','witness']){ const st=SIGS[k]; if(!st||!st.hasInk) continue;
+    T(`${lb[k]}${nm[k]?' ('+nm[k]+')':''}: signed ${st.time?fmtStamp(new Date(st.time))+'  ['+st.time+']':'(time not recorded)'}`,M+6,y,7.5); y+=11; }
+  T(`PDF created: ${fmtStamp(meta.created)}  [${meta.created.toISOString()}]`,M+6,y,7.5); y+=11;
+  T('Document fingerprint (SHA-256 of all entries and signatures):',M+6,y,7.5); y+=10;
+  doc.setFont('courier','normal'); doc.setFontSize(7.5); doc.text(meta.hash,M+6,y); y+=10;
+  T('Times are from the signing device clock. Any change to the entries or signatures produces a different fingerprint.',M+6,y,6.8,'italic'); y+=6;
+  doc.rect(M,top,M+CW-M,y-top);
+  doc.setProperties({title:'RV Trailer Bill of Sale (Alberta)',subject:'Document ID '+meta.docId,keywords:'sha256:'+meta.hash+' created:'+meta.created.toISOString()});
   footer(2);
   return doc.output('arraybuffer');
 }
@@ -366,20 +381,29 @@ function buildPDF(){
 document.getElementById('reset').addEventListener('click', ()=>{
   if(!window.confirm('Erase everything and start over?')) return;
   form.reset();
-  for(const k in SIGS){ const c=SIGS[k].canvas, x=c.getContext('2d'); x.save(); x.setTransform(1,0,0,1,0,0); x.clearRect(0,0,c.width,c.height); x.restore(); SIGS[k].hasInk=false; }
+  for(const k in SIGS){ const c=SIGS[k].canvas, x=c.getContext('2d'); x.save(); x.setTransform(1,0,0,1,0,0); x.clearRect(0,0,c.width,c.height); x.restore(); SIGS[k].hasInk=false; SIGS[k].time=null; showTime(k); }
   try{ localStorage.removeItem(KEY); localStorage.removeItem(SIGKEY); }catch(e){}
   updateWords();
   window.scrollTo({top:0, behavior:'smooth'});
   statusEl.textContent='All cleared.';
 });
+async function sha256Hex(str){ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+function canonicalRecord(){ const f={}; for(const el of form.elements){ if(!el.name) continue; if(el.type==='radio'){ if(el.checked) f[el.name]=el.value; } else f[el.name]=(el.value||'').trim(); }
+  const o={}; Object.keys(f).sort().forEach(k=>o[k]=f[k]);
+  const sg={}; for(const k in SIGS){ if(SIGS[k].hasInk) sg[k]={time:SIGS[k].time||null,img:SIGS[k].canvas.toDataURL('image/png')}; }
+  return JSON.stringify({form:'AB-rv-trailer-bill-of-sale',v:1,fields:o,signatures:sg}); }
 document.getElementById('dl').addEventListener('click', async ()=>{
   if(!window.jspdf){ statusEl.textContent='Something didn’t load. Reload the page and try again.'; return; }
   statusEl.textContent='Getting it ready…';
   try{
-    const buf = buildPDF();
+    const rec = canonicalRecord();
+    let buf, meta;
+    if(window.__last && window.__last.rec===rec){ ({buf,meta}=window.__last); }
+    else { const created=new Date(); const hash=await sha256Hex(rec+'|'+created.toISOString());
+      meta={created,hash,docId:hash.slice(0,12).toUpperCase()}; buf=buildPDF(meta); window.__last={rec,buf,meta}; }
     const last = (val('buyer_name').split(',')[0]||'').replace(/[^A-Za-z0-9]+/g,'_');
     const name = 'RV_Trailer_Bill_of_Sale' + (last?'_'+last:'') + '.pdf';
-    const blob = new Blob([buf], {type:'application/pdf'});
+    const blob = new Blob([buf.slice(0)], {type:'application/pdf'});
     const file = (typeof File!=='undefined') ? new File([blob], name, {type:'application/pdf'}) : null;
     if(file && navigator.canShare && navigator.canShare({files:[file]})){
       try{ await navigator.share({files:[file], title:'Bill of Sale'}); statusEl.textContent='Done! Tap “Save to Files” if you didn’t already.'; return; }
