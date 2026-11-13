@@ -146,6 +146,7 @@
 
 <div class="actions">
   <button class="primary" id="dl" type="button" style="font-size:17px;padding:13px 34px">Save to Phone</button>
+  <button class="secondary" id="reset" type="button" style="font-size:15px;padding:13px 18px">Start Over</button>
   <div id="status"></div>
 </div>
 
@@ -360,6 +361,16 @@ function buildPDF(){
   return doc.output('arraybuffer');
 }
 
+
+document.getElementById('reset').addEventListener('click', ()=>{
+  if(!window.confirm('Erase everything and start over?')) return;
+  form.reset();
+  for(const k in SIGS){ const c=SIGS[k].canvas, x=c.getContext('2d'); x.save(); x.setTransform(1,0,0,1,0,0); x.clearRect(0,0,c.width,c.height); x.restore(); SIGS[k].hasInk=false; }
+  try{ localStorage.removeItem(KEY); localStorage.removeItem(SIGKEY); }catch(e){}
+  updateWords();
+  window.scrollTo({top:0, behavior:'smooth'});
+  statusEl.textContent='All cleared.';
+});
 document.getElementById('dl').addEventListener('click', async ()=>{
   if(!window.jspdf){ statusEl.textContent='Something didn’t load. Reload the page and try again.'; return; }
   statusEl.textContent='Getting it ready…';
