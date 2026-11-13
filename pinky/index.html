@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RV Trailer Bill of Sale (Alberta)</title>
+<script src="../jspdf.umd.min.js"></script>
+<style>
+  :root { --ink:#1c1c1c; --muted:#5b5b5b; --line:#c9c9c9; --bar:#e4e4e4; --accent:#1f4e79; --bg:#f6f6f4; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  .wrap { max-width:820px; margin:0 auto; padding:20px 14px 120px; }
+  header { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; border-bottom:2px solid var(--ink); padding-bottom:10px; margin-bottom:14px; flex-wrap:wrap; }
+  header h1 { margin:0; font-size:26px; }
+  header .sub { font-weight:600; color:var(--muted); }
+  .note { font-size:13px; color:var(--muted); background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px 14px; }
+  .note ul { margin:4px 0 0; padding-left:18px; }
+  .note li { margin:3px 0; }
+  h2 { font-size:15px; margin:22px 0 6px; }
+  .bar { background:var(--bar); border:1px solid #9a9a9a; text-align:center; font-weight:700; font-size:12px; letter-spacing:.04em; padding:4px; margin-top:10px; }
+  .grid { display:grid; gap:0; border-left:1px solid var(--line); border-top:1px solid var(--line); background:#fff; }
+  .grid label { display:block; border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:4px 7px 5px; font-size:11px; color:var(--muted); }
+  .grid input, .grid select, textarea { display:block; width:100%; border:0; font:inherit; font-size:15px; color:var(--ink); padding:3px 0 1px; background:transparent; outline:none; }
+  .grid label:focus-within { background:#eef4fb; }
+  .c2 { grid-template-columns: 3fr 1.2fr; }
+  .c4 { grid-template-columns: 1.6fr 1.1fr .8fr 1fr; }
+  .c2e { grid-template-columns: 1fr 1fr; }
+  .cv { grid-template-columns: .5fr 1.3fr 1.3fr 1.2fr; }
+  .cvin { grid-template-columns: 2fr 1fr 1.2fr; }
+  .cdim { grid-template-columns: 1fr 1fr 1fr 2fr; }
+  .c3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width:600px) { .c2,.c4,.c2e,.cv,.cvin,.cdim,.c3 { grid-template-columns:1fr 1fr; } .span2m { grid-column: span 2; } }
+  .checks { background:#fff; border:1px solid var(--line); border-top:0; padding:7px 9px; font-size:14px; display:flex; flex-wrap:wrap; gap:6px 16px; align-items:center; }
+  .checks .lab { font-size:11px; color:var(--muted); width:100%; }
+  .checks input[type=text] { border:0; border-bottom:1px solid var(--line); font:inherit; min-width:120px; flex:1; outline:none; }
+  .price { display:grid; grid-template-columns: 3fr 1fr; gap:10px; margin-top:14px; }
+  .price label, .field label { font-size:11px; color:var(--muted); display:block; }
+  .price input, .field input { width:100%; font:inherit; font-size:15px; border:0; border-bottom:1px solid #888; background:transparent; padding:4px 0; outline:none; }
+  .ital { font-style:italic; font-size:12px; color:var(--muted); text-align:center; margin-top:6px; }
+  .q { background:#fff; border:1px solid var(--line); border-top:0; padding:10px 12px; font-size:14px; }
+  .q .row { display:flex; flex-wrap:wrap; gap:6px 16px; align-items:center; margin:6px 0; }
+  .q .row > span:first-child { min-width:210px; }
+  .q input[type=text] { border:0; border-bottom:1px solid #888; font:inherit; outline:none; flex:1; min-width:140px; padding:2px 0; }
+  textarea { border:1px solid var(--line); border-radius:4px; padding:6px; min-height:56px; resize:vertical; }
+  .terms { background:#fff; border:1px solid var(--line); border-top:0; padding:10px 14px; font-size:13px; }
+  .terms p { margin:6px 0; }
+  .sig { background:#fff; border:1px solid var(--line); border-top:0; padding:12px; font-size:13px; color:var(--muted); }
+  .pads { display:grid; grid-template-columns:1fr; gap:14px; margin-top:12px; }
+  .pad { position:relative; }
+  .padlab { font-size:14px; color:var(--ink); font-weight:600; margin-bottom:4px; }
+  .pad canvas { display:block; width:100%; height:130px; border:2px dashed #8aa6c1; border-radius:8px; background:#fbfdff; touch-action:none; }
+  .redo { position:absolute; right:6px; bottom:6px; font-size:13px; padding:5px 10px; background:#fff; color:var(--accent); border:1px solid var(--accent); }
+  .sig .lines { display:grid; grid-template-columns:1fr 1fr; gap:22px 28px; margin-top:14px; }
+  .sig .lines div { border-top:1px solid #555; padding-top:3px; text-align:center; font-size:11px; }
+  .actions { position:fixed; left:0; right:0; bottom:0; background:rgba(255,255,255,.96); border-top:1px solid var(--line); padding:10px 14px calc(10px + env(safe-area-inset-bottom)); display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  button { font:inherit; font-weight:600; border-radius:8px; padding:11px 18px; border:1px solid var(--accent); cursor:pointer; }
+  .primary { background:var(--accent); color:#fff; }
+  .secondary { background:#fff; color:var(--accent); }
+  #status { width:100%; text-align:center; font-size:12.5px; color:var(--muted); min-height:1em; }
+  .twocol { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<a href="../" style="display:inline-block;color:#1f4e79;text-decoration:none;font-weight:600;font-size:15px;margin-bottom:10px">‹ Back</a>
+<header>
+  <div><div style="font-size:12px;font-weight:700">PLEASE PRINT CLEARLY</div><h1>Bill of Sale</h1></div>
+  <div class="sub">Recreational Vehicle (RV) Trailer · Alberta</div>
+</header>
+
+<div class="note">
+  <strong>How to use:</strong> Hay Pinky, fill in all the boxes below and hit save and you’ll have it on your phone which is good enough to show in most cases. Section 1 and Section 2 has to be done to be legit in Alberta. Fill in Section 3 only if you need to.
+</div>
+
+<form id="f" autocomplete="off">
+<h2>Section 1</h2>
+<div class="bar">SELLER(S) INFORMATION</div>
+<div class="grid c2"><label class="span2m">Name(s) (Last, First, Second)<input name="seller_name"></label><label class="span2m">Telephone Number<input name="seller_phone" type="tel"></label></div>
+<div class="grid c4" style="border-top:0"><label class="span2m">Address – Street<input name="seller_street"></label><label>City / Town<input name="seller_city"></label><label>Province / State<input name="seller_prov"></label><label class="span2m">Postal Code / Zip Code<input name="seller_postal"></label></div>
+<div class="grid c2e" style="border-top:0"><label>Personal ID (DL / ID Number)<input name="seller_id"></label><label>Email (optional)<input name="seller_email" type="email"></label></div>
+
+<div class="bar">RV TRAILER INFORMATION</div>
+<div class="grid cv"><label>Year<input name="trl_year" inputmode="numeric"></label><label>Make / Manufacturer<input name="trl_make"></label><label>Model or Series<input name="trl_model"></label><label>Style<input name="trl_style"></label></div>
+<div class="checks"><span class="lab">Trailer Type (check one)</span>
+  <label><input type="radio" name="trl_type" value="Travel Trailer"> Travel Trailer</label>
+  <label><input type="radio" name="trl_type" value="Fifth Wheel"> Fifth Wheel</label>
+  <label><input type="radio" name="trl_type" value="Toy Hauler"> Toy Hauler</label>
+  <label><input type="radio" name="trl_type" value="Tent / Pop-Up"> Tent / Pop-Up</label>
+  <label><input type="radio" name="trl_type" value="Hybrid"> Hybrid</label>
+  <label><input type="radio" name="trl_type" value="Park Model"> Park Model</label>
+  <label><input type="radio" name="trl_type" value="Other"> Other:</label> <input type="text" name="trl_type_other">
+</div>
+<div class="grid cvin" style="border-top:0"><label class="span2m">VIN / Serial Number<input name="trl_vin" style="text-transform:uppercase"></label><label>Body Colour<input name="trl_colour"></label><label>Licence Plate No. (if any)<input name="trl_plate"></label></div>
+<div class="grid cdim" style="border-top:0"><label>Length (ft)<input name="trl_len" inputmode="decimal"></label><label>Number of Axles<input name="trl_axles" inputmode="numeric"></label><label class="span2m">GVWR (kg / lb)<input name="trl_gvwr"></label><label class="span2m">Hitch Type (ball / 5th wheel / gooseneck)<input name="trl_hitch"></label></div>
+
+<div class="bar">BUYER(S) INFORMATION</div>
+<div class="grid c2"><label class="span2m">Name(s) (Last, First, Second)<input name="buyer_name"></label><label class="span2m">Telephone Number<input name="buyer_phone" type="tel"></label></div>
+<div class="grid c4" style="border-top:0"><label class="span2m">Address – Street<input name="buyer_street"></label><label>City / Town<input name="buyer_city"></label><label>Province / State<input name="buyer_prov"></label><label class="span2m">Postal Code / Zip Code<input name="buyer_postal"></label></div>
+<div class="grid c2e" style="border-top:0"><label>Personal ID (DL / ID Number)<input name="buyer_id"></label><label>Email (optional)<input name="buyer_email" type="email"></label></div>
+
+<div class="price" style="grid-template-columns:1fr">
+  <label>Sale price – type the number only ($)<input name="sum_num" inputmode="decimal" placeholder="e.g. 12500" style="font-size:20px;font-weight:600"></label>
+  <label>In words (fills in by itself)<input name="sum_words" readonly tabindex="-1" style="color:#1f4e79"></label>
+</div>
+<div class="ital">(Subject to the terms of sale and special conditions in Section 3)</div>
+
+<h2>Section 2</h2>
+<div class="bar">GENERAL INFORMATION</div>
+<div class="grid c3"><label>Dated at – City / Town<input name="dated_city"></label><label>Province / State<input name="dated_prov" value="Alberta"></label><label>Country<input name="dated_country" value="Canada"></label></div>
+<div class="grid c2e" style="border-top:0"><label>On (date)<input name="dated_on" type="date"></label><label>Witness name(s) (optional)<input name="witness_names"></label></div>
+<div class="sig">I certify that all information shown above is true to the best of my knowledge.
+  <div class="pads">
+    <div class="pad"><div class="padlab">Buyer signs here with finger</div><canvas data-sig="buyer"></canvas><button type="button" class="redo" data-for="buyer">Redo</button></div>
+    <div class="pad"><div class="padlab">Seller signs here with finger</div><canvas data-sig="seller"></canvas><button type="button" class="redo" data-for="seller">Redo</button></div>
+    <div class="pad"><div class="padlab">Witness signs here (if there is one)</div><canvas data-sig="witness"></canvas><button type="button" class="redo" data-for="witness">Redo</button></div>
+  </div>
+</div>
+
+<h2>Section 3</h2>
+<div class="bar">SPECIAL CONDITIONS OF SALE</div>
+<div class="q">
+  <div>1. The trailer described above is:</div>
+  <div class="row"><span>a) Free of all liens and encumbrances:</span>
+    <label><input type="radio" name="lien" value="Yes"> Yes</label><label><input type="radio" name="lien" value="No"> No</label>
+    <input type="text" name="lienholder" placeholder="If No, lien holder name(s)"></div>
+  <div class="row"><span>b) Being paid for in full:</span>
+    <label><input type="radio" name="full" value="Yes"> Yes</label><label><input type="radio" name="full" value="No"> No</label></div>
+  <div class="row"><span>&nbsp;&nbsp;&nbsp;Being paid by:</span>
+    <label><input type="radio" name="paidby" value="Cash"> Cash</label>
+    <label><input type="radio" name="paidby" value="Cheque"> Cheque</label>
+    <label><input type="radio" name="paidby" value="Money Order"> Money Order</label>
+    <label><input type="radio" name="paidby" value="Bank Draft"> Bank Draft</label>
+    <label><input type="radio" name="paidby" value="E-Transfer"> E-Transfer</label>
+    <label><input type="radio" name="paidby" value="Other"> Other:</label><input type="text" name="paidby_other"></div>
+  <div class="row"><span>2. Payment terms:</span><input type="text" name="terms"></div>
+  <div class="row"><span>3. Last registered in (Province / State, Country):</span><input type="text" name="lastreg_prov" placeholder="Province / State"><input type="text" name="lastreg_country" placeholder="Country"></div>
+  <div style="margin-top:8px">4. Items included with the sale (keys, hitch / weight distribution, sway bar, awning, spare tire, manuals):</div>
+  <textarea name="included"></textarea>
+  <div style="margin-top:8px">5. Special conditions of sale (if any):</div>
+  <textarea name="special"></textarea>
+</div>
+
+<div class="bar">TERMS OF SALE</div>
+<div class="terms" id="termsText"></div>
+</form>
+</div>
+
+<div class="actions">
+  <button class="primary" id="dl" type="button" style="font-size:17px;padding:13px 34px">Save to Phone</button>
+  <button class="secondary" id="reset" type="button" style="font-size:15px;padding:13px 18px">Start Over</button>
+  <div id="status"></div>
+</div>
+
+<script>
+const TERMS = [
+ ["TRANSFER","In consideration of the Purchase Price stated in Section 1, the receipt and sufficiency of which the Seller acknowledges, the Seller sells and delivers the trailer described in Section 1 (the \"Trailer\") to the Buyer."],
+ ["WARRANTY OF TITLE","Unless a lien is disclosed in Section 3, the Seller warrants that the Trailer is free of any liens and encumbrances and that the Seller is the legal owner of the Trailer. The Seller also warrants that the Seller has the full right and authority to sell and deliver the Trailer, and that the Seller will defend the title of the Trailer against any and all claims and demands."],
+ ["'AS IS' CONDITION","The Buyer acknowledges that the Trailer is sold 'as is'. The Seller expressly disclaims any implied warranty as to fitness for a particular purpose and any implied warranty as to merchantability. The Seller expressly disclaims any expressed or other implied warranties."],
+ ["WORKING ORDER","Any warranty as to the condition of the Trailer and its systems and appliances, including but not limited to the roof, seals, frame, axles, brakes, tires, propane, plumbing, electrical, furnace, refrigerator, water heater and slide-outs, is expressly disclaimed by the Seller."],
+ ["MANUFACTURER'S WARRANTY","Any disclaimer of warranties by the Seller in this Bill of Sale will not in any way affect the terms of any applicable warranties from the manufacturer of the Trailer or its components."],
+ ["LIABILITIES","The Seller does not assume, nor does the Seller authorize any other person on the behalf of the Seller to assume, any liability in connection with the sale or delivery of the Trailer."],
+ ["INSPECTION","The Buyer accepts the Trailer in its existing condition given that the Buyer has either inspected the Trailer or was given the opportunity to inspect the Trailer but chose not to inspect it."],
+ ["GOVERNING LAW","This Bill of Sale will be construed in accordance with and governed by the laws of the Province of Alberta."]
+];
+const GEN = [
+ "The Buyer should visually inspect the VIN / serial number on the trailer (typically on the frame tongue and on the manufacturer's label near the front left corner) and confirm it matches Section 1.",
+ "The law in the Province of Alberta requires a trailer to be insured where applicable and registered before it is operated on a highway. A registry agent can confirm current requirements.",
+ "A trailer entering Alberta from another jurisdiction may require an out-of-province inspection. Information can be obtained from a registry agent or at alberta.ca.",
+ "Lien searches and Vehicle Information Reports are available from a registry agent using the VIN. There is a fee for each service.",
+ "The Buyer must produce the original properly completed Bill of Sale, with at least the information shown on the Alberta standardized Bill of Sale (REG3126), in order to register the trailer in Alberta."
+];
+document.getElementById('termsText').innerHTML = TERMS.map(t=>`<p><strong>${t[0]}:</strong> ${t[1]}</p>`).join('') +
+  '<p style="color:#5b5b5b">Buyer and seller initial the printed copy to confirm the terms of sale.</p>';
+
+const form = document.getElementById('f');
+const statusEl = document.getElementById('status');
+const KEY = 'rv_bos_draft_v1';
+function val(n){ const el = form.elements[n]; if(!el) return ''; if(el instanceof RadioNodeList) return el.value||''; return (el.value||'').trim(); }
+function saveDraft(){ try{ const o={}; for(const el of form.elements){ if(!el.name) continue; if(el.type==='radio'){ if(el.checked) o[el.name]=el.value; } else o[el.name]=el.value; } localStorage.setItem(KEY, JSON.stringify(o)); }catch(e){} }
+function loadDraft(){ try{ const o=JSON.parse(localStorage.getItem(KEY)||'null'); if(!o) return; for(const el of form.elements){ if(!el.name||!(el.name in o)) continue; if(el.type==='radio') el.checked = el.value===o[el.name]; else el.value=o[el.name]; } }catch(e){} }
+loadDraft();
+form.addEventListener('input', saveDraft);
+form.addEventListener('change', saveDraft);
+form.addEventListener('submit', e=>e.preventDefault());
+function numToWords(n){
+  const ones=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+  const tens=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+  const under1000=(x)=>{ let out=[]; if(x>=100){ out.push(ones[Math.floor(x/100)]+' hundred'); x%=100; }
+    if(x>=20){ out.push(tens[Math.floor(x/10)]+(x%10?'-'+ones[x%10]:'')); } else if(x>0){ out.push(ones[x]); } return out.join(' '); };
+  if(n===0) return 'zero';
+  const scales=[[1e9,'billion'],[1e6,'million'],[1e3,'thousand']]; let out=[];
+  for(const [v,name] of scales){ if(n>=v){ out.push(under1000(Math.floor(n/v))+' '+name); n%=v; } }
+  if(n>0) out.push(under1000(n));
+  return out.join(' ');
+}
+function updateWords(){
+  const raw=(form.elements['sum_num'].value||'').replace(/[^0-9.]/g,'');
+  const w=form.elements['sum_words'];
+  if(!raw || isNaN(parseFloat(raw))){ w.value=''; return; }
+  const total=Math.round(parseFloat(raw)*100); const d=Math.floor(total/100), c=total%100;
+  let t=numToWords(d); t=t.charAt(0).toUpperCase()+t.slice(1)+' and '+String(c).padStart(2,'0')+'/100';
+  w.value=t;
+}
+form.elements['sum_num'].addEventListener('input', ()=>{ updateWords(); saveDraft(); });
+form.elements['sum_num'].addEventListener('blur', ()=>{ const raw=(form.elements['sum_num'].value||'').replace(/[^0-9.]/g,''); if(raw && !isNaN(parseFloat(raw))){ form.elements['sum_num'].value=parseFloat(raw).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2}); saveDraft(); } });
+updateWords();
+
+
+
+const SIGS = {};
+const SIGKEY = 'rv_bos_sigs_v1';
+let storedSigs = {}; try{ storedSigs = JSON.parse(localStorage.getItem(SIGKEY)||'{}')||{}; }catch(e){}
+function persistSigs(){ try{ const o={}; for(const k in SIGS){ if(SIGS[k].hasInk) o[k]=SIGS[k].canvas.toDataURL('image/png'); } localStorage.setItem(SIGKEY, JSON.stringify(o)); }catch(e){} }
+document.querySelectorAll('canvas[data-sig]').forEach(cv=>{
+  const key = cv.dataset.sig; const st = { canvas:cv, hasInk:false };
+  SIGS[key]=st;
+  const ctx = cv.getContext('2d');
+  function size(){ const r=cv.getBoundingClientRect(); const dpr=Math.max(2, window.devicePixelRatio||1);
+    const keep = st.hasInk ? cv.toDataURL() : null;
+    cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineWidth=2.6; ctx.strokeStyle='#0b1f4d';
+    if(keep){ const im=new Image(); im.onload=()=>{ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.drawImage(im,0,0,cv.width,cv.height); ctx.restore(); }; im.src=keep; } }
+  size();
+  if(storedSigs[key]){ const im=new Image(); im.onload=()=>{ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.drawImage(im,0,0,cv.width,cv.height); ctx.restore(); st.hasInk=true; }; im.src=storedSigs[key]; }
+  let drawing=false, last=null;
+  const pos=e=>{ const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; };
+  cv.addEventListener('pointerdown', e=>{ e.preventDefault(); drawing=true; last=pos(e); try{cv.setPointerCapture(e.pointerId);}catch(_){} ctx.beginPath(); ctx.arc(last[0],last[1],1.2,0,Math.PI*2); ctx.fillStyle='#0b1f4d'; ctx.fill(); st.hasInk=true; });
+  cv.addEventListener('pointermove', e=>{ if(!drawing) return; e.preventDefault(); const p=pos(e); ctx.beginPath(); ctx.moveTo(last[0],last[1]); ctx.lineTo(p[0],p[1]); ctx.stroke(); last=p; });
+  const end=()=>{ if(drawing){ drawing=false; persistSigs(); } };
+  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end); cv.addEventListener('pointerleave', end);
+  window.addEventListener('resize', ()=>{ clearTimeout(st.t); st.t=setTimeout(size,150); });
+});
+document.querySelectorAll('.redo').forEach(b=>b.addEventListener('click',()=>{ const st=SIGS[b.dataset.for]; const c=st.canvas; c.getContext('2d').save(); c.getContext('2d').setTransform(1,0,0,1,0,0); c.getContext('2d').clearRect(0,0,c.width,c.height); c.getContext('2d').restore(); st.hasInk=false; persistSigs(); }));
+function sigImage(key){ const st=SIGS[key]; if(!st||!st.hasInk) return null;
+  const c=st.canvas, ctx=c.getContext('2d'); const d=ctx.getImageData(0,0,c.width,c.height).data;
+  let x0=c.width,y0=c.height,x1=-1,y1=-1;
+  for(let y=0;y<c.height;y+=2){ for(let x=0;x<c.width;x+=2){ if(d[(y*c.width+x)*4+3]>20){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } } }
+  if(x1<0) return null; const pad=6; x0=Math.max(0,x0-pad); y0=Math.max(0,y0-pad); x1=Math.min(c.width,x1+pad); y1=Math.min(c.height,y1+pad);
+  const t=document.createElement('canvas'); t.width=x1-x0; t.height=y1-y0; t.getContext('2d').drawImage(c,x0,y0,t.width,t.height,0,0,t.width,t.height);
+  return { url:t.toDataURL('image/png'), w:t.width, h:t.height };
+}
+
+function fmtDate(s){ if(!s) return ''; const [y,m,d]=s.split('-').map(Number); const mn=['January','February','March','April','May','June','July','August','September','October','November','December']; return `${d} ${mn[m-1]} ${y}`; }
+
+function buildPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'pt', format:'letter'});
+  const W=612, H=792, M=36, CW=W-2*M;
+  const mono = (s)=> (s||'');
+  let y;
+  const T = (txt,x,yy,size=8.5,style='normal',opts={})=>{ doc.setFont('helvetica',style); doc.setFontSize(size); doc.text(String(txt),x,yy,opts); };
+  const bar = (yy,txt)=>{ doc.setFillColor(217,217,217); doc.setDrawColor(0); doc.setLineWidth(0.6); doc.rect(M,yy,CW,13,'FD'); T(txt,W/2,yy+9.5,8.5,'bold',{align:'center'}); return yy+13; };
+  const row = (yy,cells,h=24)=>{ let x=M; doc.setLineWidth(0.6); for(const [label,frac,v] of cells){ const w=CW*frac; doc.rect(x,yy,w,h); T(label,x+2.5,yy+7.5,6.5); if(v){ doc.setFont('helvetica','normal'); let fs=10; doc.setFontSize(fs); while(doc.getTextWidth(v)>w-6 && fs>6){ fs-=0.5; doc.setFontSize(fs);} doc.text(v,x+4,yy+h-5); } x+=w; } return yy+h; };
+  const box = (x,yy,checked,s=8)=>{ doc.setLineWidth(0.7); doc.rect(x,yy,s,s); if(checked){ doc.setLineWidth(1.1); doc.line(x+1.5,yy+1.5,x+s-1.5,yy+s-1.5); doc.line(x+s-1.5,yy+1.5,x+1.5,yy+s-1.5);} };
+  const opt = (x,yy,label,checked)=>{ box(x,yy-7,checked); T(label,x+11,yy,8.5); doc.setFont('helvetica','normal'); doc.setFontSize(8.5); return x+11+doc.getTextWidth(label)+10; };
+  const fillLine = (x1,x2,yy,v,size=10)=>{ doc.setLineWidth(0.6); doc.line(x1,yy+2,x2,yy+2); if(v){ doc.setFont('helvetica','normal'); let fs=size; doc.setFontSize(fs); while(doc.getTextWidth(v)>x2-x1-4 && fs>6){fs-=0.5; doc.setFontSize(fs);} doc.text(v,x1+3,yy); } };
+  const para = (txt,x,yy,w,size=7.8,boldHead)=>{ doc.setFontSize(size); const lh=size*1.25; if(boldHead){ doc.setFont('helvetica','bold'); const hw=doc.getTextWidth(boldHead+':')+3; doc.text(boldHead+':',x,yy); doc.setFont('helvetica','normal'); const first = doc.splitTextToSize(txt, w-hw); const firstLine = first[0]; doc.text(firstLine,x+hw,yy); const rest = txt.slice(firstLine.length).trim(); if(rest){ const lines=doc.splitTextToSize(rest,w); doc.text(lines,x,yy+lh); return yy+lh*(lines.length+1);} return yy+lh; } doc.setFont('helvetica','normal'); const lines=doc.splitTextToSize(txt,w); doc.text(lines,x,yy); return yy+lh*lines.length; };
+  const footer = (n)=>{ T('RV Trailer Bill of Sale - Province of Alberta',M,H-22,7); T('Confidential (when completed)',W/2,H-22,7,'normal',{align:'center'}); T(`Page ${n} of 2`,W-M,H-22,7,'normal',{align:'right'}); };
+  const sig = (x,yy,w,label)=>{ doc.setLineWidth(0.6); doc.line(x,yy,x+w,yy); T(label,x+w/2,yy+8.5,7,'normal',{align:'center'}); };
+
+  // PAGE 1
+  T('PLEASE PRINT CLEARLY',M,M+4,7.5,'bold');
+  T('Bill of Sale',W-M,M+8,17,'bold',{align:'right'});
+  T('Recreational Vehicle (RV) Trailer',W-M,M+21,10,'bold',{align:'right'});
+  y = M+38;
+  const bullets = [
+   "Before buying a used trailer, search the VIN / serial number on the Canadian Police Information Centre (CPIC) website (www.cpic-cipc.ca) for any reports of the trailer being stolen, and ask a registry agent for a lien search.",
+   "Sections 1 and 2 must be completed to make this Bill of Sale acceptable for registration in Alberta. Section 3, on the back of this form, should also be completed.",
+   "Two copies of this Bill of Sale should be completed. The buyer keeps the original and the seller keeps the copy.",
+   "Alterations or corrections made while completing the Bill of Sale must be initialled by both the buyer and seller."];
+  for(const b of bullets){ doc.circle(M+5,y-2.5,1.6,'F'); y = para(b,M+12,y,CW-12,7.8)+1.5; }
+  y += 8; T('Section 1',M,y,10,'bold'); y+=4;
+  y = bar(y,'SELLER(S) INFORMATION');
+  y = row(y,[['Name(s) (Last, First, Second)',.72,val('seller_name')],['Telephone Number',.28,val('seller_phone')]]);
+  y = row(y,[['Address - Street',.36,val('seller_street')],['City / Town',.24,val('seller_city')],['Province / State',.18,val('seller_prov')],['Postal Code / Zip Code',.22,val('seller_postal').toUpperCase()]]);
+  y = row(y,[['Personal Identification (DL / ID Number)',.5,val('seller_id')],['Email (optional)',.5,val('seller_email')]]);
+  y = bar(y,'RV TRAILER INFORMATION');
+  y = row(y,[['Year',.12,val('trl_year')],['Make / Manufacturer',.30,val('trl_make')],['Model or Series',.30,val('trl_model')],['Style',.28,val('trl_style')]]);
+  doc.rect(M,y,CW,22); T('Trailer Type (check one)',M+2.5,y+7.5,6.5);
+  let x=M+6; const tt=val('trl_type');
+  for(const t of ['Travel Trailer','Fifth Wheel','Toy Hauler','Tent / Pop-Up','Hybrid','Park Model','Other:']){ x = opt(x,y+18,t, tt===t.replace(':','')); }
+  fillLine(x-6,M+CW-4,y+18,tt==='Other'?val('trl_type_other'):'',9);
+  y+=22;
+  y = row(y,[['Vehicle Identification Number (VIN) / Serial Number',.50,val('trl_vin').toUpperCase()],['Body Colour',.22,val('trl_colour')],['Licence Plate No. (if any)',.28,val('trl_plate')]]);
+  y = row(y,[['Length (ft)',.16,val('trl_len')],['Number of Axles',.16,val('trl_axles')],['GVWR (kg / lb)',.20,val('trl_gvwr')],['Hitch Type (ball / 5th wheel / gooseneck)',.48,val('trl_hitch')]]);
+  y = bar(y,'BUYER(S) INFORMATION');
+  y = row(y,[['Name(s) (Last, First, Second)',.72,val('buyer_name')],['Telephone Number',.28,val('buyer_phone')]]);
+  y = row(y,[['Address - Street',.36,val('buyer_street')],['City / Town',.24,val('buyer_city')],['Province / State',.18,val('buyer_prov')],['Postal Code / Zip Code',.22,val('buyer_postal').toUpperCase()]]);
+  y = row(y,[['Personal Identification (DL / ID Number)',.5,val('buyer_id')],['Email (optional)',.5,val('buyer_email')]]);
+  y += 16;
+  T('This trailer was sold for the sum of:',M,y,8.5);
+  fillLine(M+150,M+CW-140,y,val('sum_words'));
+  T('Sum written in full (CAD)',(M+150+M+CW-140)/2,y+10,6.5,'normal',{align:'center'});
+  T('Dollars $',M+CW-132,y,8.5);
+  fillLine(M+CW-92,M+CW,y,val('sum_num'));
+  y += 22;
+  T('(Subject to the terms of sale and special conditions which appear in Section 3 on the back of this form)',W/2,y,7.5,'italic',{align:'center'});
+  y += 18; T('Section 2',M,y,10,'bold'); y+=4;
+  y = bar(y,'GENERAL INFORMATION');
+  y += 20;
+  T('Dated at:',M+20,y,8.5);
+  fillLine(M+70,M+230,y,val('dated_city')); T('City / Town',M+150,y+10,6.5,'normal',{align:'center'});
+  fillLine(M+240,M+380,y,val('dated_prov')); T('Province / State',M+310,y+10,6.5,'normal',{align:'center'});
+  fillLine(M+390,M+530,y,val('dated_country')); T('Country',M+460,y+10,6.5,'normal',{align:'center'});
+  y += 24;
+  T('on',M+20,y,8.5); fillLine(M+70,M+300,y,fmtDate(val('dated_on'))); T('Date (Day / Month / Year)',M+185,y+10,6.5,'normal',{align:'center'});
+  y += 22;
+  T('I certify that all information shown above is true to the best of my knowledge.',M+20,y,8.5);
+  y += 42;
+  const cw=230, l1=M+20, l2=M+CW-20-cw;
+  const putSig=(key,x,yy,maxW,maxH)=>{ const im=sigImage(key); if(!im) return; let w=maxW, h=w*im.h/im.w; if(h>maxH){ h=maxH; w=h*im.w/im.h; } doc.addImage(im.url,'PNG',x+(cw-w)/2,yy-h-1,w,h); };
+  y += 6;
+  const rowsS=[['Signature of Buyer','Signature of Seller','buyer','seller'],['Signature of Buyer','Signature of Seller',null,null],['Signature of Witness','Signature of Witness','witness',null]];
+  for(const [a,b,ka,kb] of rowsS){ if(ka) putSig(ka,l1,y,cw-20,34); if(kb) putSig(kb,l2,y,cw-20,34); sig(l1,y,cw,a); sig(l2,y,cw,b); y+=40; }
+  y -= 4;
+  const wn = val('witness_names');
+  T('Witness name:',l1,y,7); fillLine(l1+52,l1+cw,y,wn,8.5);
+  T('Witness name:',l2,y,7); fillLine(l2+52,l2+cw,y,'',8.5);
+  footer(1);
+
+  // PAGE 2
+  doc.addPage();
+  y = M+8; T('Section 3',M,y,10,'bold'); y+=4;
+  y = bar(y,'SPECIAL CONDITIONS OF SALE');
+  y += 14; T('1.  The trailer described on the front of this form is:',M+4,y,8.5);
+  y += 15; T('a)  Free of all liens and encumbrances:',M+18,y,8.5);
+  const lien=val('lien'); x=opt(M+180,y,'Yes',lien==='Yes'); x=opt(x,y,'No',lien==='No');
+  T('If No, name of lien holder(s):',x,y,8.5); doc.setFontSize(8.5); const lx=x+doc.getTextWidth('If No, name of lien holder(s):')+4;
+  fillLine(lx,M+CW,y,val('lienholder'),9);
+  y += 16; T('b)  Being paid for in full:',M+18,y,8.5);
+  const full=val('full'); x=opt(M+180,y,'Yes',full==='Yes'); opt(x,y,'No',full==='No');
+  y += 15; T('Being paid by:',M+32,y,8.5);
+  const pb=val('paidby'); x=M+100;
+  for(const t of ['Cash','Cheque','Money Order','Bank Draft','E-Transfer','Other:']) x=opt(x,y,t,pb===t.replace(':',''));
+  fillLine(x-6,M+CW,y,pb==='Other'?val('paidby_other'):'',9);
+  y += 18; T('2.  Payment Terms:',M+4,y,8.5); fillLine(M+90,M+CW,y,val('terms'),9);
+  y += 18; T('3.  Trailer was last registered in:',M+4,y,8.5);
+  fillLine(M+150,M+330,y,val('lastreg_prov'),9); T('Province / State',M+240,y+10,6.5,'normal',{align:'center'});
+  fillLine(M+350,M+CW,y,val('lastreg_country'),9); T('Country',M+350+(CW-350)/2,y+10,6.5,'normal',{align:'center'});
+  y += 22; T('4.  Items included with the sale (e.g. keys, hitch / weight distribution, sway bar, awning, spare tire, manuals):',M+4,y,8.5);
+  y += 4; doc.setLineWidth(0.6); doc.rect(M+18,y,CW-18,30);
+  if(val('included')){ doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.text(doc.splitTextToSize(val('included'),CW-26).slice(0,3),M+22,y+10); }
+  y += 44; T('5.  Special conditions of sale (if any):',M+4,y,8.5);
+  y += 4; doc.rect(M+18,y,CW-18,36);
+  if(val('special')){ doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.text(doc.splitTextToSize(val('special'),CW-26).slice(0,3),M+22,y+10); }
+  y += 44;
+  y = bar(y,'TERMS OF SALE');
+  y += 11;
+  for(const [h,b] of TERMS){ y = para(b,M+4,y,CW-8,7.8,h)+3; }
+  y += 10;
+  T('Terms of sale read and agreed -',M+4,y,8);
+  T('Buyer initials:',M+140,y,8); fillLine(M+200,M+270,y,'');
+  T('Seller initials:',M+300,y,8); fillLine(M+360,M+430,y,'');
+  for(const [k,x0] of [['buyer',M+200],['seller',M+360]]){ const im=sigImage(k); if(im){ let h=16, w=h*im.w/im.h; if(w>68){ w=68; h=w*im.h/im.w; } doc.addImage(im.url,'PNG',x0+1,y-h+1,w,h); } }
+  y += 12;
+  y = bar(y,'GENERAL INFORMATION');
+  y += 10;
+  for(const g of GEN){ doc.circle(M+7,y-2.5,1.5,'F'); y = para(g,M+14,y,CW-16,7.3)+2; }
+  y += 4;
+  T('Any dispute arising from this sale is a civil matter between the parties named in this document.',M+4,y,7);
+  footer(2);
+  return doc.output('arraybuffer');
+}
+
+
+document.getElementById('reset').addEventListener('click', ()=>{
+  if(!window.confirm('Erase everything and start over?')) return;
+  form.reset();
+  for(const k in SIGS){ const c=SIGS[k].canvas, x=c.getContext('2d'); x.save(); x.setTransform(1,0,0,1,0,0); x.clearRect(0,0,c.width,c.height); x.restore(); SIGS[k].hasInk=false; }
+  try{ localStorage.removeItem(KEY); localStorage.removeItem(SIGKEY); }catch(e){}
+  updateWords();
+  window.scrollTo({top:0, behavior:'smooth'});
+  statusEl.textContent='All cleared.';
+});
+document.getElementById('dl').addEventListener('click', async ()=>{
+  if(!window.jspdf){ statusEl.textContent='Something didn’t load. Reload the page and try again.'; return; }
+  statusEl.textContent='Getting it ready…';
+  try{
+    const buf = buildPDF();
+    const last = (val('buyer_name').split(',')[0]||'').replace(/[^A-Za-z0-9]+/g,'_');
+    const name = 'RV_Trailer_Bill_of_Sale' + (last?'_'+last:'') + '.pdf';
+    const blob = new Blob([buf], {type:'application/pdf'});
+    const file = (typeof File!=='undefined') ? new File([blob], name, {type:'application/pdf'}) : null;
+    if(file && navigator.canShare && navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file], title:'Bill of Sale'}); statusEl.textContent='Done! Tap “Save to Files” if you didn’t already.'; return; }
+      catch(e){ if(e && e.name==='AbortError'){ statusEl.textContent='Not saved. Tap Save to Phone to try again.'; return; } }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 60000);
+    statusEl.textContent='Saved to your phone!';
+  }catch(e){ statusEl.textContent='Couldn’t save. Tap Save to Phone to try again.'; }
+});
+</script>
+</body>
+</html>
